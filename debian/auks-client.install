@@ -1,0 +1,6 @@
+#!/usr/bin/dh-exec
+
+usr/bin/auks
+usr/sbin/aukspriv
+etc/init.d.aukspriv => etc/init.d/aukspriv
+etc/aukspriv.service lib/systemd/system

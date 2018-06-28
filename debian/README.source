@@ -1,0 +1,12 @@
+auks for Debian
+--------------
+
+This package is managed with git-buildpackage.
+
+Upstream repositories:
+
+git://github.com/hautreux/auks.git
+git://github.com/ddj-brown/auks.git
+
+ -- jbazik <john_bazik@brown.edu>  Fri, 22 Jun 2018 16:53:55 -0400
+

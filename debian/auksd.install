@@ -1,0 +1,8 @@
+#!/usr/bin/dh-exec
+
+usr/sbin/auksd
+usr/sbin/auksdrenewer
+etc/init.d.auksd => etc/init.d/auksd
+etc/init.d.auksdrenewer => etc/init.d/auksdrenewer
+etc/auksd.service lib/systemd/system
+etc/auksdrenewer.service lib/systemd

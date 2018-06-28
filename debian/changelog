@@ -1,0 +1,5 @@
+auks (0.4.4-1) unstable; urgency=medium
+
+  * Initial release of debian package.
+
+ -- jbazik <john_bazik@brown.edu>  Fri, 22 Jun 2018 16:53:55 -0400
