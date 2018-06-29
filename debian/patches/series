@@ -1,2 +1,3 @@
 autoreconf
 pam-module
+autoreconf-pam
