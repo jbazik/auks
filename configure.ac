@@ -29,6 +29,9 @@ AC_PROG_LEX
 AM_PROG_LEX
 AC_PROG_YACC
 
+dnl Look for PAM
+AX_PAM
+
 dnl Look after SLURM resource manager
 AX_SLURM
 
@@ -42,6 +45,7 @@ AC_CONFIG_FILES([Makefile
 		src/auks/Makefile
 		src/auksd/Makefile
 		src/plugins/Makefile
+		src/plugins/pam/Makefile
 		src/plugins/slurm/Makefile
 		etc/init.d.auksd
 		etc/init.d.auksdrenewer

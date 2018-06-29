@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -89,7 +88,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = src/api/auks
+subdir = src/plugins/pam
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -98,8 +97,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(auks_include_HEADERS) \
-	$(noinst_HEADERS) $(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
@@ -131,24 +129,20 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(auks_includedir)"
-LTLIBRARIES = $(lib_LTLIBRARIES)
-libauksapi_la_DEPENDENCIES = ../confparse/libconfig_parsing.la \
-	../xternal/libxternal.la
-am_libauksapi_la_OBJECTS = libauksapi_la-auks_krb5_stream.lo \
-	libauksapi_la-auks_krb5_cred.lo libauksapi_la-auks_cred.lo \
-	libauksapi_la-auks_cred_repo.lo libauksapi_la-auks_acl.lo \
-	libauksapi_la-auks_message.lo libauksapi_la-auks_buffer.lo \
-	libauksapi_la-auksd_engine.lo libauksapi_la-auks_engine.lo \
-	libauksapi_la-auks_error.lo libauksapi_la-auks_api.lo
-libauksapi_la_OBJECTS = $(am_libauksapi_la_OBJECTS)
+am__installdirs = "$(DESTDIR)$(pamplugdir)" "$(DESTDIR)$(man8dir)"
+LTLIBRARIES = $(pamplug_LTLIBRARIES)
+@HAVE_PAM_TRUE@pam_auks_la_DEPENDENCIES = $(LIBAUKSAPI)
+am__pam_auks_la_SOURCES_DIST = pam_auks.c
+@HAVE_PAM_TRUE@am_pam_auks_la_OBJECTS = pam_auks_la-pam_auks.lo
+pam_auks_la_OBJECTS = $(am_pam_auks_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libauksapi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+pam_auks_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libauksapi_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(pam_auks_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_PAM_TRUE@am_pam_auks_la_rpath = -rpath $(pamplugdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -183,14 +177,16 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libauksapi_la_SOURCES)
-DIST_SOURCES = $(libauksapi_la_SOURCES)
+SOURCES = $(pam_auks_la_SOURCES)
+DIST_SOURCES = $(am__pam_auks_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-HEADERS = $(auks_include_HEADERS) $(noinst_HEADERS)
+man8dir = $(mandir)/man8
+NROFF = nroff
+MANS = $(man8_MANS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -340,34 +336,18 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-lib_LTLIBRARIES = libauksapi.la
-auks_includedir = $(includedir)/auks
-auks_include_HEADERS = auks_api.h auks_error.h \
-				auks_engine.h \
-				auks_cred.h auks_buffer.h \
-				auks_acl.h auks_message.h \
-				auks_cred_repo.h
+@HAVE_PAM_TRUE@man8_MANS = pam_auks.so.8
+@HAVE_PAM_TRUE@LIBAUKSAPI = ../../api/auks/libauksapi.la
+@HAVE_PAM_TRUE@pamplugdir = /usr/lib64/security
+@HAVE_PAM_TRUE@pamplug_LTLIBRARIES = pam_auks.la
+@HAVE_PAM_TRUE@pam_auks_la_SOURCES = pam_auks.c
+@HAVE_PAM_TRUE@pam_auks_la_CPPFLAGS = -I$(top_srcdir)/src/api $(PAM_CPPFLAGS) \
+@HAVE_PAM_TRUE@				-DBINDIR=\"$(bindir)\"
 
-noinst_HEADERS = auks_krb5_stream.h auks_krb5_cred.h \
-				auks_log.h
+@HAVE_PAM_TRUE@pam_auks_la_LDFLAGS = $(PAM_LDFLAGS) -module \
+@HAVE_PAM_TRUE@				-avoid-version --export-dynamic --quiet
 
-libauksapi_la_SOURCES = auks_krb5_stream.c auks_krb5_cred.c \
-				auks_cred.c auks_cred_repo.c \
-				auks_acl.c auks_message.c \
-				auks_buffer.c \
-				auksd_engine.c auks_engine.c \
-				auks_error.c auks_api.c
-
-libauksapi_la_CPPFLAGS = -I../ -pthread \
-				-DLOCALSTATEDIR=\"$(localstatedir)\"
-
-libauksapi_la_LDFLAGS = $(LIB_LDFLAGS) \
-				-version-info 0:1:0 \
-				-lkrb5 -pthread
-
-libauksapi_la_LIBADD = ../confparse/libconfig_parsing.la \
-				../xternal/libxternal.la
-
+@HAVE_PAM_TRUE@pam_auks_la_LIBADD = $(LIBAUKSAPI)
 all: all-am
 
 .SUFFIXES:
@@ -381,9 +361,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/api/auks/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/plugins/pam/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/api/auks/Makefile
+	  $(AUTOMAKE) --gnu src/plugins/pam/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -402,33 +382,33 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 
-install-libLTLIBRARIES: $(lib_LTLIBRARIES)
+install-pamplugLTLIBRARIES: $(pamplug_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
-	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
+	@list='$(pamplug_LTLIBRARIES)'; test -n "$(pamplugdir)" || list=; \
 	list2=; for p in $$list; do \
 	  if test -f $$p; then \
 	    list2="$$list2 $$p"; \
 	  else :; fi; \
 	done; \
 	test -z "$$list2" || { \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(libdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(libdir)" || exit 1; \
-	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(libdir)'"; \
-	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(libdir)"; \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(pamplugdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(pamplugdir)" || exit 1; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(pamplugdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(pamplugdir)"; \
 	}
 
-uninstall-libLTLIBRARIES:
+uninstall-pamplugLTLIBRARIES:
 	@$(NORMAL_UNINSTALL)
-	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
+	@list='$(pamplug_LTLIBRARIES)'; test -n "$(pamplugdir)" || list=; \
 	for p in $$list; do \
 	  $(am__strip_dir) \
-	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(libdir)/$$f'"; \
-	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(libdir)/$$f"; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(pamplugdir)/$$f'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(pamplugdir)/$$f"; \
 	done
 
-clean-libLTLIBRARIES:
-	-test -z "$(lib_LTLIBRARIES)" || rm -f $(lib_LTLIBRARIES)
-	@list='$(lib_LTLIBRARIES)'; \
+clean-pamplugLTLIBRARIES:
+	-test -z "$(pamplug_LTLIBRARIES)" || rm -f $(pamplug_LTLIBRARIES)
+	@list='$(pamplug_LTLIBRARIES)'; \
 	locs=`for p in $$list; do echo $$p; done | \
 	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
 	      sort -u`; \
@@ -437,8 +417,8 @@ clean-libLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libauksapi.la: $(libauksapi_la_OBJECTS) $(libauksapi_la_DEPENDENCIES) $(EXTRA_libauksapi_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libauksapi_la_LINK) -rpath $(libdir) $(libauksapi_la_OBJECTS) $(libauksapi_la_LIBADD) $(LIBS)
+pam_auks.la: $(pam_auks_la_OBJECTS) $(pam_auks_la_DEPENDENCIES) $(EXTRA_pam_auks_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(pam_auks_la_LINK) $(am_pam_auks_la_rpath) $(pam_auks_la_OBJECTS) $(pam_auks_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -446,17 +426,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_acl.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_buffer.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_cred.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_cred_repo.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_engine.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_error.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_krb5_cred.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_krb5_stream.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auks_message.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libauksapi_la-auksd_engine.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_auks_la-pam_auks.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -479,109 +449,59 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
-libauksapi_la-auks_krb5_stream.lo: auks_krb5_stream.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_krb5_stream.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_krb5_stream.Tpo -c -o libauksapi_la-auks_krb5_stream.lo `test -f 'auks_krb5_stream.c' || echo '$(srcdir)/'`auks_krb5_stream.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_krb5_stream.Tpo $(DEPDIR)/libauksapi_la-auks_krb5_stream.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_krb5_stream.c' object='libauksapi_la-auks_krb5_stream.lo' libtool=yes @AMDEPBACKSLASH@
+pam_auks_la-pam_auks.lo: pam_auks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_auks_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pam_auks_la-pam_auks.lo -MD -MP -MF $(DEPDIR)/pam_auks_la-pam_auks.Tpo -c -o pam_auks_la-pam_auks.lo `test -f 'pam_auks.c' || echo '$(srcdir)/'`pam_auks.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pam_auks_la-pam_auks.Tpo $(DEPDIR)/pam_auks_la-pam_auks.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pam_auks.c' object='pam_auks_la-pam_auks.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_krb5_stream.lo `test -f 'auks_krb5_stream.c' || echo '$(srcdir)/'`auks_krb5_stream.c
-
-libauksapi_la-auks_krb5_cred.lo: auks_krb5_cred.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_krb5_cred.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_krb5_cred.Tpo -c -o libauksapi_la-auks_krb5_cred.lo `test -f 'auks_krb5_cred.c' || echo '$(srcdir)/'`auks_krb5_cred.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_krb5_cred.Tpo $(DEPDIR)/libauksapi_la-auks_krb5_cred.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_krb5_cred.c' object='libauksapi_la-auks_krb5_cred.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_krb5_cred.lo `test -f 'auks_krb5_cred.c' || echo '$(srcdir)/'`auks_krb5_cred.c
-
-libauksapi_la-auks_cred.lo: auks_cred.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_cred.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_cred.Tpo -c -o libauksapi_la-auks_cred.lo `test -f 'auks_cred.c' || echo '$(srcdir)/'`auks_cred.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_cred.Tpo $(DEPDIR)/libauksapi_la-auks_cred.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_cred.c' object='libauksapi_la-auks_cred.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_cred.lo `test -f 'auks_cred.c' || echo '$(srcdir)/'`auks_cred.c
-
-libauksapi_la-auks_cred_repo.lo: auks_cred_repo.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_cred_repo.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_cred_repo.Tpo -c -o libauksapi_la-auks_cred_repo.lo `test -f 'auks_cred_repo.c' || echo '$(srcdir)/'`auks_cred_repo.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_cred_repo.Tpo $(DEPDIR)/libauksapi_la-auks_cred_repo.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_cred_repo.c' object='libauksapi_la-auks_cred_repo.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_cred_repo.lo `test -f 'auks_cred_repo.c' || echo '$(srcdir)/'`auks_cred_repo.c
-
-libauksapi_la-auks_acl.lo: auks_acl.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_acl.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_acl.Tpo -c -o libauksapi_la-auks_acl.lo `test -f 'auks_acl.c' || echo '$(srcdir)/'`auks_acl.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_acl.Tpo $(DEPDIR)/libauksapi_la-auks_acl.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_acl.c' object='libauksapi_la-auks_acl.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_acl.lo `test -f 'auks_acl.c' || echo '$(srcdir)/'`auks_acl.c
-
-libauksapi_la-auks_message.lo: auks_message.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_message.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_message.Tpo -c -o libauksapi_la-auks_message.lo `test -f 'auks_message.c' || echo '$(srcdir)/'`auks_message.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_message.Tpo $(DEPDIR)/libauksapi_la-auks_message.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_message.c' object='libauksapi_la-auks_message.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_message.lo `test -f 'auks_message.c' || echo '$(srcdir)/'`auks_message.c
-
-libauksapi_la-auks_buffer.lo: auks_buffer.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_buffer.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_buffer.Tpo -c -o libauksapi_la-auks_buffer.lo `test -f 'auks_buffer.c' || echo '$(srcdir)/'`auks_buffer.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_buffer.Tpo $(DEPDIR)/libauksapi_la-auks_buffer.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_buffer.c' object='libauksapi_la-auks_buffer.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_buffer.lo `test -f 'auks_buffer.c' || echo '$(srcdir)/'`auks_buffer.c
-
-libauksapi_la-auksd_engine.lo: auksd_engine.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auksd_engine.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auksd_engine.Tpo -c -o libauksapi_la-auksd_engine.lo `test -f 'auksd_engine.c' || echo '$(srcdir)/'`auksd_engine.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auksd_engine.Tpo $(DEPDIR)/libauksapi_la-auksd_engine.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auksd_engine.c' object='libauksapi_la-auksd_engine.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auksd_engine.lo `test -f 'auksd_engine.c' || echo '$(srcdir)/'`auksd_engine.c
-
-libauksapi_la-auks_engine.lo: auks_engine.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_engine.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_engine.Tpo -c -o libauksapi_la-auks_engine.lo `test -f 'auks_engine.c' || echo '$(srcdir)/'`auks_engine.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_engine.Tpo $(DEPDIR)/libauksapi_la-auks_engine.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_engine.c' object='libauksapi_la-auks_engine.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_engine.lo `test -f 'auks_engine.c' || echo '$(srcdir)/'`auks_engine.c
-
-libauksapi_la-auks_error.lo: auks_error.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_error.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_error.Tpo -c -o libauksapi_la-auks_error.lo `test -f 'auks_error.c' || echo '$(srcdir)/'`auks_error.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_error.Tpo $(DEPDIR)/libauksapi_la-auks_error.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_error.c' object='libauksapi_la-auks_error.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_error.lo `test -f 'auks_error.c' || echo '$(srcdir)/'`auks_error.c
-
-libauksapi_la-auks_api.lo: auks_api.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libauksapi_la-auks_api.lo -MD -MP -MF $(DEPDIR)/libauksapi_la-auks_api.Tpo -c -o libauksapi_la-auks_api.lo `test -f 'auks_api.c' || echo '$(srcdir)/'`auks_api.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libauksapi_la-auks_api.Tpo $(DEPDIR)/libauksapi_la-auks_api.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='auks_api.c' object='libauksapi_la-auks_api.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libauksapi_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libauksapi_la-auks_api.lo `test -f 'auks_api.c' || echo '$(srcdir)/'`auks_api.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pam_auks_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pam_auks_la-pam_auks.lo `test -f 'pam_auks.c' || echo '$(srcdir)/'`pam_auks.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
-install-auks_includeHEADERS: $(auks_include_HEADERS)
+install-man8: $(man8_MANS)
 	@$(NORMAL_INSTALL)
-	@list='$(auks_include_HEADERS)'; test -n "$(auks_includedir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(auks_includedir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(auks_includedir)" || exit 1; \
+	@list1='$(man8_MANS)'; \
+	list2=''; \
+	test -n "$(man8dir)" \
+	  && test -n "`echo $$list1$$list2`" \
+	  || exit 0; \
+	echo " $(MKDIR_P) '$(DESTDIR)$(man8dir)'"; \
+	$(MKDIR_P) "$(DESTDIR)$(man8dir)" || exit 1; \
+	{ for i in $$list1; do echo "$$i"; done;  \
+	if test -n "$$list2"; then \
+	  for i in $$list2; do echo "$$i"; done \
+	    | sed -n '/\.8[a-z]*$$/p'; \
 	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
+	} | while read p; do \
+	  if test -f $$p; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; echo "$$p"; \
+	done | \
+	sed -e 'n;s,.*/,,;p;h;s,.*\.,,;s,^[^8][0-9a-z]*$$,8,;x' \
+	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,' | \
+	sed 'N;N;s,\n, ,g' | { \
+	list=; while read file base inst; do \
+	  if test "$$base" = "$$inst"; then list="$$list $$file"; else \
+	    echo " $(INSTALL_DATA) '$$file' '$(DESTDIR)$(man8dir)/$$inst'"; \
+	    $(INSTALL_DATA) "$$file" "$(DESTDIR)$(man8dir)/$$inst" || exit $$?; \
+	  fi; \
+	done; \
+	for i in $$list; do echo "$$i"; done | $(am__base_list) | \
 	while read files; do \
-	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(auks_includedir)'"; \
-	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(auks_includedir)" || exit $$?; \
-	done
+	  test -z "$$files" || { \
+	    echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(man8dir)'"; \
+	    $(INSTALL_DATA) $$files "$(DESTDIR)$(man8dir)" || exit $$?; }; \
+	done; }
 
-uninstall-auks_includeHEADERS:
+uninstall-man8:
 	@$(NORMAL_UNINSTALL)
-	@list='$(auks_include_HEADERS)'; test -n "$(auks_includedir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(auks_includedir)'; $(am__uninstall_files_from_dir)
+	@list='$(man8_MANS)'; test -n "$(man8dir)" || exit 0; \
+	files=`{ for i in $$list; do echo "$$i"; done; \
+	} | sed -e 's,.*/,,;h;s,.*\.,,;s,^[^8][0-9a-z]*$$,8,;x' \
+	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,'`; \
+	dir='$(DESTDIR)$(man8dir)'; $(am__uninstall_files_from_dir)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -667,9 +587,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES) $(MANS)
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(auks_includedir)"; do \
+	for dir in "$(DESTDIR)$(pamplugdir)" "$(DESTDIR)$(man8dir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -704,7 +624,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
+clean-am: clean-generic clean-libtool clean-pamplugLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -725,13 +645,13 @@ info: info-am
 
 info-am:
 
-install-data-am: install-auks_includeHEADERS
+install-data-am: install-man install-pamplugLTLIBRARIES
 
 install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-libLTLIBRARIES
+install-exec-am:
 
 install-html: install-html-am
 
@@ -741,7 +661,7 @@ install-info: install-info-am
 
 install-info-am:
 
-install-man:
+install-man: install-man8
 
 install-pdf: install-pdf-am
 
@@ -771,25 +691,27 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-auks_includeHEADERS uninstall-libLTLIBRARIES
+uninstall-am: uninstall-man uninstall-pamplugLTLIBRARIES
+
+uninstall-man: uninstall-man8
 
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool cscopelist-am ctags \
+	clean-libtool clean-pamplugLTLIBRARIES cscopelist-am ctags \
 	ctags-am distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am \
-	install-auks_includeHEADERS install-data install-data-am \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-man8 \
+	install-pamplugLTLIBRARIES install-pdf install-pdf-am \
 	install-ps install-ps-am install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am \
-	uninstall-auks_includeHEADERS uninstall-libLTLIBRARIES
+	tags tags-am uninstall uninstall-am uninstall-man \
+	uninstall-man8 uninstall-pamplugLTLIBRARIES
 
 .PRECIOUS: Makefile
 
