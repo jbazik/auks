@@ -1,0 +1,754 @@
+Description: Include Dave Johnson's pam module.
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ auks (0.4.4-1) unstable; urgency=medium
+ .
+   * Initial release of debian package.
+Author: jbazik <john_bazik@brown.edu>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: 2018-06-29
+
+--- auks-0.4.4.orig/ChangeLog
++++ auks-0.4.4/ChangeLog
+@@ -1,3 +1,18 @@
++04/06/2016 Matthieu Hautreux <matthieu.hautreux@cea.fr>
++
++    * auksd/systemd: set max open fds limit to 32k
++
++02/02/2016 Matthieu Hautreux <matthieu.hautreux@cea.fr>
++
++    * aukspriv/systemd: allow shell commands in environment file
++    * Fix systemd dependencies (patch from Robbert Eggermont, TU Delft)
++
++11/24/2015 Matthieu Hautreux <matthieu.hautreux@cea.fr>
++
++	* slurm/spank: add 'enforced' conf options to request for
++	  a valid credential at submission time or return an error
++	  to the spank stack. (see man auks.so)
++
+ 11/18/2015  Matthieu Hautreux <matthieu.hautreux@cea.fr>
+ 
+ 	* auks-0.4.4-3
+--- auks-0.4.4.orig/doc/man/man5/auks.conf.5
++++ auks-0.4.4/doc/man/man5/auks.conf.5
+@@ -188,6 +188,8 @@ related to replay attacks. The default i
+ \fBLogFile\fR
+ specifies the file in which to log AUKS daemon details. 
+ The default is \fB/var/log/auksd.log\fR.
++Note that when launched using systemd, this parameter is silently ignored as
++logs are printed to stdout and managed using journalctl.
+ .TP
+ \fBLogLevel\fR
+ specifies the level of verbosity to use. The default is \fB1\fR and only logs
+@@ -197,6 +199,8 @@ when the daemon is signaled with SIGUSR2
+ \fBDebugFile\fR
+ specifies the file in which to put AUKS daemon debug details.
+ The default is \fB/var/log/auksd.log\fR.
++Note that when launched using systemd, this parameter is silently ignored as
++debug infos are printed to stdout and managed using journalctl.
+ .TP
+ \fBDebugLevel\fR
+ specifies the level of debug to use. The default is \fB0\fR which 
+@@ -237,6 +241,8 @@ The following parameters are only used b
+ \fBLogFile\fR
+ specifies the file in which to log \fBauksdrenewer\fR details. 
+ The default is \fB/var/log/auksdrenewer.log\fR.
++Note that when launched using systemd, this parameter is silently ignored as
++logs are printed to stdout and managed using journalctl.
+ .TP
+ \fBLogLevel\fR
+ specifies the level of verbosity to use. The default is \fB1\fR.
+@@ -244,6 +250,8 @@ specifies the level of verbosity to use.
+ \fBDebugFile\fR
+ specifies the file in which to put \fBauksdrenewer\fR debug details.
+ The default is \fB/var/log/auksdrenewer.log\fR.
++Note that when launched using systemd, this parameter is silently ignored as
++debug infos are printed to stdout and managed using journalctl.
+ .TP
+ \fBDebugLevel\fR
+ specifies the level of debug to use. The default is \fB0\fR which 
+--- auks-0.4.4.orig/etc/auksd.service.in
++++ auks-0.4.4/etc/auksd.service.in
+@@ -8,6 +8,7 @@ EnvironmentFile=-/etc/sysconfig/auksd
+ ExecStart=@sbindir@/auksd -F $AUKSPRIV_OPTIONS
+ ExecReload=/bin/kill -HUP $MAINPID
+ Restart=on-failure
++LimitNOFILE=32768
+ 
+ [Install]
+-WantedBy=auksdrenewer.service
++WantedBy=multi-user.target
+--- auks-0.4.4.orig/etc/auksdrenewer.service.in
++++ auks-0.4.4/etc/auksdrenewer.service.in
+@@ -1,6 +1,7 @@
+ [Unit]
+ Description=Auks Credentials Renewer Daemon
+ After=network.target
++Wants=aukspriv.service
+ 
+ [Service]
+ Type=simple
+--- auks-0.4.4.orig/etc/aukspriv.service.in
++++ auks-0.4.4/etc/aukspriv.service.in
+@@ -4,9 +4,8 @@ After=network.target
+ 
+ [Service]
+ Type=forking
+-EnvironmentFile=-/etc/sysconfig/aukspriv
+-ExecStart=@sbindir@/aukspriv $AUKSPRIV_OPTIONS
++ExecStart=/bin/sh -c 'source /etc/sysconfig/aukspriv && @sbindir@/aukspriv $AUKSPRIV_OPTIONS'
+ GuessMainPID=true
+ 
+ [Install]
+-WantedBy=auksdrenewer.service
++WantedBy=multi-user.target
+--- /dev/null
++++ auks-0.4.4/m4/pam.m4
+@@ -0,0 +1,46 @@
++
++AC_DEFUN([AX_PAM],
++[
++
++	saved_CPPFLAGS="$CPPFLAGS"
++	saved_LDFLAGS="$LDFLAGS"
++
++	ac_have_pam=no
++
++	AC_ARG_WITH(pam,
++		AS_HELP_STRING(--with-pam@<:@=PATH@:>@,Specify PAM support and path),
++		[ ac_have_pam=yes; PAMDIR="$withval" ]
++	)
++	AC_ARG_WITH(pam-lib,
++		AS_HELP_STRING(--with-pam-lib@<:@=PATH@:>@,Specify PAM libraries path),
++		[ PAMLIBDIR="$withval" ]
++	)
++
++	if test "x$ac_have_pam" == "xyes" ; then
++
++		PAM_CPPFLAGS=
++		PAM_LDFLAGS=
++
++		dnl extend CPPFLAGS and LDFLAGS if required
++		if test "x$PAMDIR" != "x" && test "x$PAMDIR" != "xyes" ; then
++			PAM_CPPFLAGS="-I$PAMDIR/include"
++			CPPFLAGS="${CPPFLAGS} ${PAM_CPPFLAGS}"
++			PAM_LDFLAGS="-L$PAMDIR/lib"
++                        LDFLAGS="$LDFLAGS $PAM_LDFLAGS"
++		fi
++		if test "x$PAMLIBDIR" != "x" && test "x$PAMLIBDIR" != "xyes"  ; then
++			PAM_LDFLAGS="-L$PAMLIBDIR"
++                        LDFLAGS="$LDFLAGS $PAM_LDFLAGS"
++                fi
++	fi
++
++	CPPFLAGS="$saved_CPPFLAGS"
++	LDFLAGS="$saved_LDFLAGS"
++
++	AC_SUBST([PAM_CPPFLAGS])
++	AC_SUBST([PAM_LDFLAGS])
++
++	AM_CONDITIONAL(HAVE_PAM, test "x$ac_have_pam" = "xyes")
++	AC_SUBST(HAVE_PAM)
++
++])
+--- auks-0.4.4.orig/src/plugins/Makefile.am
++++ auks-0.4.4/src/plugins/Makefile.am
+@@ -1,2 +1,2 @@
+ 
+-SUBDIRS = slurm
++SUBDIRS = slurm pam
+--- /dev/null
++++ auks-0.4.4/src/plugins/pam/Makefile.am
+@@ -0,0 +1,20 @@
++
++if HAVE_PAM
++
++man8_MANS		=	pam_auks.so.8
++
++LIBAUKSAPI		=	../../api/auks/libauksapi.la
++
++pamplugdir		=	/usr/lib64/security
++
++pamplug_LTLIBRARIES	=	pam_auks.la
++
++pam_auks_la_SOURCES	=	pam_auks.c
++pam_auks_la_CPPFLAGS	=	-I$(top_srcdir)/src/api $(PAM_CPPFLAGS) \
++				-DBINDIR=\"$(bindir)\"
++pam_auks_la_LDFLAGS	=	$(PAM_LDFLAGS) -module \
++				-avoid-version --export-dynamic --quiet
++pam_auks_la_LIBADD	=	$(LIBAUKSAPI)
++
++endif
++
+--- /dev/null
++++ auks-0.4.4/src/plugins/pam/pam_auks.c
+@@ -0,0 +1,108 @@
++
++#include <sys/types.h>
++#include <pwd.h>
++#include <unistd.h>
++#include <stdlib.h>
++
++#include "auks/auks_error.h"
++#include "auks/auks_api.h"
++
++#define PAM_SM_SESSION
++
++#include <security/_pam_macros.h>
++#include <security/pam_modules.h>
++#include <security/pam_ext.h>
++
++#define USE_AUKS_API
++#ifdef USE_AUKS_CLI
++#ifndef BINDIR 
++#define BINDIR "/usr/local/bin"
++#endif
++
++#define AUKS BINDIR "/" "auks"
++#endif
++
++PAM_EXTERN int
++pam_sm_open_session(pam_handle_t *pamh, int flags,
++                                   int argc, const char **argv)
++{
++	struct passwd *pw = NULL, pw_s;
++	const char *user = NULL;
++	char **envp = NULL;
++	char buffer[1024];
++	int ret, status;
++	char *ccache = NULL;
++	pid_t pid;
++	int fstatus;
++	auks_engine_t engine;
++
++	ccache = (char *) pam_getenv(pamh, "KRB5CCNAME");
++	if (!ccache) {
++		pam_info(pamh, "pam_auks: KRB5CCNAME not found\n");
++		return PAM_IGNORE;
++	}
++	ret = pam_get_user(pamh, &user, NULL);
++	if (ret != PAM_SUCCESS || user == NULL) {
++		pam_info(pamh, "pam_auks: user not found\n");
++		return PAM_IGNORE;
++	}
++
++	ret = getpwnam_r(user, &pw_s, buffer, sizeof(buffer), &pw);
++	if (ret != 0 || pw == NULL || pw->pw_uid == 0) {
++		return PAM_IGNORE;
++	}
++#ifdef USE_AUKS_CLI
++	envp = pam_getenvlist(pamh);
++	pam_info(pamh,
++		"pam_auks: about to call auks for user %s(%d) with ccache %s\n",
++		user, pw->pw_uid, ccache);
++	pid = fork();
++	if (pid < 0) {
++		pam_error(pamh, "pam_auks: fork failed\n");
++		return PAM_IGNORE;
++	}
++	if (pid > 0) {
++		waitpid(pid, &status, 0);
++		if (envp) free(envp);
++	} else {
++		char *auks_args[3] = { AUKS, "-a", NULL };
++
++		setuid(pw->pw_uid);
++		execve(AUKS, auks_args, envp);
++	}
++#else	/* AUKS API */
++	/* load auks conf */
++	seteuid(pw->pw_uid);
++	setenv("KRB5CCNAME", ccache, 1);
++	fstatus = auks_api_init(&engine, NULL);
++	if ( fstatus != AUKS_SUCCESS ) {
++		pam_error(pamh, "API init failed : %s", auks_strerror(fstatus));
++		return PAM_IGNORE;
++	}
++
++	/* send credential to auks daemon */
++	fstatus = auks_api_add_cred(&engine, ccache);
++
++	if (fstatus != AUKS_SUCCESS) {
++		pam_info(pamh, "cred forwarding failed : %s",
++		      auks_strerror(fstatus));
++	}
++	else {
++		pam_info(pamh, "cred forwarding succeed");
++	}
++
++	/* unload auks conf */
++	auks_api_close(&engine);
++	seteuid(getuid());
++#endif
++	return (PAM_SUCCESS);
++}
++ 
++PAM_EXTERN int
++pam_sm_close_session(pam_handle_t *pamh, int flags,
++                                    int argc, const char **argv)
++{
++	return (PAM_SUCCESS);
++}
++
++
+--- /dev/null
++++ auks-0.4.4/src/plugins/pam/pam_auks.so.8
+@@ -0,0 +1,25 @@
++.TH "pam_auks.so.8" "Jun 2017" "David Johnson" "pam_auks.so"
++
++.SH "NAME"
++pam_auks.so \- AUKS PAM session plugin
++
++.SH "SYNOPSIS"
++session	optional	\fBpam_auks.so\fR
++or
++-session	optional	\fBpam_auks.so\fR
++
++\fB
++.SH "DESCRIPTION"
++
++.LP
++\fBpam_auks.so\fR is a PAM plugin that updates krb5 credentials 
++to AUKS whenever the user logs in or unlocks their screen.
++This plugin is enabled by configuring /etc/pam.d/postlogin
++
++.SH "COPYING"
++.LP
++Copyright  (2017)
++.br
++
++.SH "SEE ALSO"
++.BR auks (1),
+--- auks-0.4.4.orig/src/plugins/slurm/auks.so.8
++++ auks-0.4.4/src/plugins/slurm/auks.so.8
+@@ -91,6 +91,24 @@ can be found on the system.
+ Note that this can cause performance degradation and delay the termination of
+ the step. The default mode is \fBno\fR to disable the feature. Available modes
+ are \fByes\fR|\fBall\fR to flush every FS using sync().
++.LP
++.TP
++\fBenforced\fR
++when set, consider that a missing credential at submission will be treated
++as an error by the Spank stack. Spank plugins being able to be configured
++as optional or required, set internal auks status to \fBdone\fR  in order
++to allow slurmstepds to acquire a previously pushed credential if it exists
++and the mode is optional. When not set, auks will silently disable auks if
++no credential cache is available at submission time.
++.br
++To sum up :
++.br
++- if not set : transparently disable auks if no credential cache found
++.br
++- if set and this plugin is optional : enable auks, a previously credential
++might be available
++.br
++- if set and this plugin is required : abort submission
+ 
+ .SH "COPYING"
+ .LP
+--- auks-0.4.4.orig/src/plugins/slurm/slurm-spank-auks.c
++++ auks-0.4.4/src/plugins/slurm/slurm-spank-auks.c
+@@ -127,6 +127,10 @@ static int auks_mode = AUKS_MODE_DISABLE
+ /* enable/disable acquired ticket access to next spank plugins in the stack */
+ static int auks_spankstack = 0;
+ 
++/* enforce auks client stage success when set to 1 (no silent disabling of
++ * auks when no ticket is found on the client side) */
++static int auks_enforced = 0;
++
+ static uid_t auks_minimum_uid = 0;
+ 
+ volatile pid_t renewer_pid;
+@@ -166,7 +170,7 @@ slurm_spank_init (spank_t sp, int ac, ch
+ {
+ 	spank_option_register(sp,spank_opts);
+ 	_parse_plugstack_conf(sp,ac,av);
+-	
++
+ 	if (!spank_remote (sp))
+ 		return 0;
+ 	else
+@@ -178,7 +182,7 @@ slurm_spank_init_post_opt (spank_t sp, i
+ {
+ 	if ( spank_context() == S_CTX_ALLOCATOR )
+ 		return spank_auks_local_user_init(sp,ac,av);
+-	else 
++	else
+ 		return 0;
+ }
+ 
+@@ -215,7 +219,7 @@ slurm_spank_task_exit (spank_t sp, int a
+ 
+ 	/* add this task to the count of exited tasks */
+ 	exited_tasks += 1 ;
+-       
++
+ 	/* signal renew process */
+ 	if ( renewer_pid != 0 &&
+ 	     renewer_pid != -1 ) {
+@@ -232,28 +236,28 @@ slurm_spank_task_exit (spank_t sp, int a
+ 				      strerror(errno));
+ 				return (-1);
+ 			}
+-			if ( seteuid(uid) ) {				
++			if ( seteuid(uid) ) {
+ 				xerror("unable to switch to user uid : %s",
+ 				      strerror(errno));
+ 				setegid(getgid());
+ 				return (-1);
+ 			}
+-			
+-			/* sync all/some file systems to ensure dirty pages flush 
+-			   while we are sure to still have a ticket to do that 
++
++			/* sync all/some file systems to ensure dirty pages flush
++			   while we are sure to still have a ticket to do that
+ 			   (see _sync_fs method for more details) */
+ 			_sync_fs();
+ 
+ 			/* kill the renewer process and wait for it */
+ 			kill(renewer_pid, SIGTERM);
+ 			waitpid(renewer_pid, NULL, 0);
+-			
++
+ 			/* replace privileged uid/gid */
+ 			seteuid(getuid());
+ 			setegid(getgid());
+-			
++
+ 		}
+-		
++
+ 	}
+ 
+ 	return 0;
+@@ -308,7 +312,7 @@ slurm_spank_exit (spank_t sp, int ac, ch
+ {
+ 	if (!spank_remote (sp))
+ 		return 0;
+-	else	
++	else
+ 		return spank_auks_remote_exit(sp,ac,av);
+ }
+ 
+@@ -324,9 +328,9 @@ int spank_auks_local_user_init (spank_t
+ {
+ 	int fstatus;
+ 	auks_engine_t engine;
+-	
++
+ 	int mode;
+-	
++
+ 	/* get required auks mode */
+ 	mode = _spank_auks_get_current_mode(sp,ac,av);
+ 	switch(mode) {
+@@ -335,11 +339,11 @@ int spank_auks_local_user_init (spank_t
+ 		xinfo("cred forwarding already done");
+ 		return 0;
+ 		break;
+-		
++
+ 	case AUKS_MODE_DISABLED:
+ 	        return 0;
+ 		break;
+-		
++
+ 	case AUKS_MODE_ENABLED:
+ 	        break;
+ 
+@@ -354,17 +358,36 @@ int spank_auks_local_user_init (spank_t
+ 		xerror("API init failed : %s",auks_strerror(fstatus));
+ 		return -1;
+ 	}
+-	
++
+ 	/* send credential to auks daemon */
+ 	fstatus = auks_api_add_cred(&engine,NULL);
+-	/* If no credential cache, assume no auks support to avoid */
+-	/* printing error messages to non kerberized users */
+-	if ( fstatus == AUKS_ERROR_KRB5_CRED_READ_CC ) {
+-		xinfo("cred forwarding failed : %s",auks_strerror(fstatus));
+-		xinfo("no readable credential cache : disabling auks support");
+-		fstatus = setenv("SLURM_SPANK_AUKS","no",0);
+-		if ( fstatus != 0 ) {
+-			xerror("unable to set SLURM_SPANK_AUKS to no");
++
++	if (fstatus == AUKS_ERROR_KRB5_CRED_READ_CC) {
++		if (!auks_enforced) {
++			/* If no credential cache and we are not in enforced
++			 * mode, assume no auks support to avoid printing error
++			 * messages to non kerberized users */
++			xinfo("cred forwarding failed : %s",
++			      auks_strerror(fstatus));
++			xinfo("no readable credential cache : "
++			      "disabling auks support");
++			fstatus = setenv("SLURM_SPANK_AUKS","no",0);
++			if ( fstatus != 0 ) {
++				xerror("unable to set SLURM_SPANK_AUKS to no");
++			}
++		}
++		else {
++			/* set env var to done to let slurmstepds try to
++			 * grab something from the auks repo or fail,
++			 * thus, depending on th optional/required conf of
++			 * this plugin in Spank, we might be able to
++			 * use a previously sent credential even if this
++			 * stage fails */
++			xerror("cred forwarding failed : %s [enforced]",
++			      auks_strerror(fstatus));
++			xinfo("no readable credential cache : considering"
++			      " success but returning err to the spank task");
++			setenv("SLURM_SPANK_AUKS","done",0);
+ 		}
+ 	}
+ 	else if ( fstatus != AUKS_SUCCESS ) {
+@@ -377,10 +400,10 @@ int spank_auks_local_user_init (spank_t
+ 			xerror("unable to set SLURM_SPANK_AUKS to done");
+ 		}
+ 	}
+-	
++
+ 	/* unload auks conf */
+ 	auks_api_close(&engine);
+-	
++
+ 	return fstatus;
+ }
+ 
+@@ -390,17 +413,17 @@ spank_auks_remote_init (spank_t sp, int
+ {
+ 	int fstatus;
+ 	auks_engine_t engine;
+-	
++
+ 	char *prev_krb5ccname = NULL;
+ 
+ 	static uint32_t jobid;
+ 	uid_t uid;
+ 	gid_t gid;
+-	
++
+ 	mode_t omask;
+ 
+ 	int mode;
+-	
++
+ 	/* get required auks mode */
+ 	mode = _spank_auks_get_current_mode(sp,ac,av);
+ 	switch(mode) {
+@@ -421,13 +444,13 @@ spank_auks_remote_init (spank_t sp, int
+ 
+ 	/* set default auks cred cache length to 0 */
+ 	auks_credcache[0]='\0';
+-	
++
+ 	/* get slurm jobid */
+ 	if (spank_get_item (sp, S_JOB_ID, &jobid) != ESPANK_SUCCESS) {
+ 		xerror("failed to get jobid: %s",strerror(errno));
+ 		return (-1);
+ 	}
+-	
++
+ 	/* get slurm job user uid & gid */
+ 	if (spank_get_item (sp, S_JOB_UID, &uid) != ESPANK_SUCCESS) {
+ 		xerror("failed to get uid: %s", strerror(errno));
+@@ -437,7 +460,7 @@ spank_auks_remote_init (spank_t sp, int
+ 		xerror("failed to get gid: %s", strerror(errno));
+ 		return (-1);
+ 	}
+-	
++
+ 	/* build credential cache name */
+ 	fstatus = snprintf(auks_credcache,CREDCACHE_MAXLENGTH,
+ 			   "/tmp/krb5cc_%u_%u_XXXXXX",
+@@ -447,7 +470,7 @@ spank_auks_remote_init (spank_t sp, int
+ 		xerror("unable to build auks credcache name");
+ 		goto exit;
+ 	}
+-	
++
+ 	/* build unique credential cache */
+ 	omask = umask(S_IRUSR | S_IWUSR);
+ 	fstatus = mkstemp(auks_credcache);
+@@ -467,14 +490,14 @@ spank_auks_remote_init (spank_t sp, int
+ 		}
+ 		setenv("KRB5CCNAME", auks_hostcredcache_file, 1);
+ 	}
+-	
++
+ 	/* initialize auks API */
+ 	fstatus = auks_api_init(&engine,auks_conf_file);
+ 	if ( fstatus != AUKS_SUCCESS ) {
+ 		xerror("API init failed : %s",auks_strerror(fstatus));
+ 		goto exit;
+ 	}
+-	
++
+ 	/* get user credential */
+ 	fstatus = auks_api_get_cred(&engine,uid,auks_credcache);
+ 	if ( fstatus != AUKS_SUCCESS ) {
+@@ -485,7 +508,7 @@ spank_auks_remote_init (spank_t sp, int
+ 		goto unload;
+ 	}
+ 	xinfo("user '%u' cred stored in %s",uid,auks_credcache);
+-	
++
+ 	/* change file owner */
+ 	fstatus = chown(auks_credcache,uid,gid);
+ 	if ( fstatus != 0 ) {
+@@ -493,7 +516,7 @@ spank_auks_remote_init (spank_t sp, int
+ 		      auks_credcache,strerror(errno));
+ 		goto unload;
+ 	}
+-	
++
+ 	/* set cred cache name in user env */
+ 	fstatus = spank_setenv(sp,"KRB5CCNAME",auks_credcache,1);
+ 	if ( fstatus != 0 ) {
+@@ -519,8 +542,8 @@ spank_auks_remote_init (spank_t sp, int
+ unload:
+ 	/* unload auks conf */
+ 	auks_api_close(&engine);
+-	
+-exit:    
++
++exit:
+ 	return (fstatus);
+ }
+ 
+@@ -544,11 +567,11 @@ spank_auks_remote_exit (spank_t sp, int
+ 	/* now only process in remote mode */
+ 	if (!spank_remote (sp))
+ 		return (0);
+-	
++
+ 	/* only process if a cred file was defined in a previous call */
+ 	if ( strnlen(auks_credcache,CREDCACHE_MAXLENGTH) == 0 )
+ 		return 0;
+-	
++
+ 	/* get slurm job user uid & gid */
+ 	if (spank_get_item (sp, S_JOB_UID, &uid) != ESPANK_SUCCESS) {
+ 		xerror("failed to get uid: %s", strerror(errno));
+@@ -574,8 +597,8 @@ spank_auks_remote_exit (spank_t sp, int
+ 		return (-1);
+ 	}
+ 
+-	/* sync all/some file systems to ensure dirty pages flush 
+-	   while we are sure to still have a ticket to do that 
++	/* sync all/some file systems to ensure dirty pages flush
++	   while we are sure to still have a ticket to do that
+ 	   (see _sync_fs method for more details) */
+ 	_sync_fs();
+ 
+@@ -587,7 +610,7 @@ spank_auks_remote_exit (spank_t sp, int
+ 	}
+ 	else
+ 		xinfo("user '%u' cred cache %s removed",uid,auks_credcache);
+-	
++
+ 	/* replace privileged uid/gid */
+ 	seteuid(getuid());
+ 	setegid(getgid());
+@@ -608,13 +631,13 @@ _spank_auks_get_current_mode(spank_t sp,
+ 
+ 	char* envval=NULL;
+ 	uid_t uid;
+-	
++
+ 	/* check if conf allow the user to do auks stuff */
+ 	if ( auks_minimum_uid > 0 ) {
+-		
++
+ 		/* get slurm job user uid */
+ 		if (spank_remote (sp)) {
+-			if (spank_get_item (sp, S_JOB_UID, &uid) 
++			if (spank_get_item (sp, S_JOB_UID, &uid)
+ 			    != ESPANK_SUCCESS) {
+ 				xerror("failed to get uid: %s",
+ 				       strerror(errno));
+@@ -642,7 +665,7 @@ _spank_auks_get_current_mode(spank_t sp,
+ 	else {
+ 		envval = getenv(SPANK_AUKS_ENVVAR);
+ 	}
+-		
++
+ 	/* if env variable is set, use it */
+ 	if ( envval != NULL ) {
+ 		/* check env var value (can be yes|no|done)*/
+@@ -660,7 +683,7 @@ _spank_auks_get_current_mode(spank_t sp,
+ 		/* or configuration file auks flag */
+ 		return auks_mode;
+ 	}
+-	
++
+ }
+ 
+ /* parse command line option */
+@@ -697,11 +720,11 @@ _parse_plugstack_conf (spank_t sp, int a
+ {
+ 	int i;
+ 	char* elt;
+-	
++
+ 	for (i = 0; i < ac; i++) {
+ 		elt = av[i];
+ 		if ( strncmp(elt,"conf=",5) == 0 ) {
+-			auks_conf_file=strdup(elt+5);	
++			auks_conf_file=strdup(elt+5);
+ 		}
+ 		else if ( strncmp(elt,"sync=",5) == 0 ) {
+ 			auks_sync_mode=strdup(elt+5);
+@@ -715,6 +738,9 @@ _parse_plugstack_conf (spank_t sp, int a
+ 		else if (strncmp ("spankstackcred=yes", av[i], 18) == 0) {
+ 		        auks_spankstack = 1;
+ 		}
++		else if (strncmp ("enforced", av[i], 8) == 0) {
++		        auks_enforced = 1;
++		}
+ 		else if (strncmp ("minimum_uid=", av[i], 12) == 0) {
+ 		        auks_minimum_uid = (uid_t) strtol(av[i]+12,NULL,10);
+ 			if ( auks_minimum_uid == LONG_MIN ||
+@@ -730,22 +756,22 @@ _parse_plugstack_conf (spank_t sp, int a
+ 					"parameter '%s'",av[i]+14);
+ 		}
+ 	}
+-	
++
+ 	return (0);
+ }
+ 
+-/* 
++/*
+  * Parameterized synchronization of FS page cache
+  *
+  * With kerberized FS, asynchronous dirty pages flush is a problem.
+- * Indeed, if no kerberos ticket is available when the flush occurs, 
++ * Indeed, if no kerberos ticket is available when the flush occurs,
+  * the operation fails resulting in incomplete files and data losses.
+  *
+  * We thus need to ensure that Kerberized FS dirty pages are flushed
+  * before removing a ticket which can potentially be the last valid
+  * one for the user the dirty pages belong to.
+  *
+- * Note that as a ticket has a limited validity and a sync operation can 
++ * Note that as a ticket has a limited validity and a sync operation can
+  * potentially takes a long time, if a ticket renewer ensures the renewal
+  * of the ticket, it must persist while the sync operation occurs to ensure
+  * that the ticket will be kept valid during the flush timelapse.
