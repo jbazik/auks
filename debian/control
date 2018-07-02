@@ -32,7 +32,7 @@ Description: Aside Utility for Kerberos Support
 Package: libauksapi
 Section: libs
 Architecture: any
-Depends: auks (= ${binary:Version}), ${misc:Depends}
+Depends: auks-client (= ${binary:Version}), ${misc:Depends}
 Description: AUKS API library
  Auks is an open source project that helps Batch Systems to provide
  Kerberos Credential Support.  Auks is not an authentication system. It
@@ -56,7 +56,8 @@ Description: Development package for AUKS
 
 Package: slurm-spank-auks
 Architecture: any
-Depends: libauksapi (= ${binary:Version}), slurm (>= 1.3.0), libslurm30 (>= 1.3.0)
+Depends: libauksapi (= ${binary:Version}), slurm (>= 1.3.0),
+ libslurm30 (>= 1.3.0), ${misc:Depends}
 Description:: Slurm plugin for Auks
  Auks is an open source project that helps Batch Systems to provide
  Kerberos Credential Support.  Auks is not an authentication system. It
@@ -67,7 +68,7 @@ Description:: Slurm plugin for Auks
 
 Package: slurm-spank-auks-dev
 Architecture: any
-Depends: libauksapi-dev (= ${binary:Version}), slurm (>= 1.3.0)
+Depends: libauksapi-dev (= ${binary:Version}), slurm (>= 1.3.0), ${misc:Depends}
 Description:: Development package for slurm plugin for Auks
  Auks is an open source project that helps Batch Systems to provide
  Kerberos Credential Support.  Auks is not an authentication system. It
@@ -79,7 +80,8 @@ Description:: Development package for slurm plugin for Auks
 
 Package: libpam-auks
 Architecture: any
-Depends: libauksapi (= ${binary:Version}), libpam0g, libpam-runtime
+Depends: libauksapi (= ${binary:Version}), libpam0g, libpam-runtime,
+ ${misc:Depends}
 Description:: PAM module for Auks
  Auks is an open source project that helps Batch Systems to provide
  Kerberos Credential Support.  Auks is not an authentication system. It
