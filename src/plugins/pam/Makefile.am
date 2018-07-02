@@ -5,7 +5,7 @@ man8_MANS		=	pam_auks.so.8
 
 LIBAUKSAPI		=	../../api/auks/libauksapi.la
 
-pamplugdir		=	/usr/lib64/security
+pamplugdir		=	$(libdir)/security
 
 pamplug_LTLIBRARIES	=	pam_auks.la
 
