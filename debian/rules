@@ -21,7 +21,7 @@ export DH_OPTIONS = -v
 
 # include slurm for plugin
 override_dh_auto_configure:
-	dh_auto_configure -- --with-slurm --with-slurm-lib
+	dh_auto_configure -- --with-slurm --with-slurm-lib --with-pam
 
 override_dh_shlibdeps:
 	dh_shlibdeps --dpkg-shlibdeps-params=-Sdebian/tmp

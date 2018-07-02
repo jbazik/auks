@@ -1,0 +1,3 @@
+usr/lib/*/security/pam_auks.so
+#usr/lib/*/security/pam_auks.la
+#usr/lib/*/security/pam_auks.a
