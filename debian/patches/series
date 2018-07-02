@@ -1,3 +1,4 @@
 autoreconf
 pam-module
 autoreconf-pam
+fix-pam-module-dest

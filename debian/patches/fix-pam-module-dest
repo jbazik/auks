@@ -1,0 +1,47 @@
+Description: Fix pam module destination path.
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ auks (0.4.4-1) unstable; urgency=medium
+ .
+   * Initial release of debian package.
+Author: jbazik <john_bazik@brown.edu>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: 2018-07-02
+
+--- auks-0.4.4.orig/src/plugins/pam/Makefile.am
++++ auks-0.4.4/src/plugins/pam/Makefile.am
+@@ -5,7 +5,7 @@ man8_MANS		=	pam_auks.so.8
+ 
+ LIBAUKSAPI		=	../../api/auks/libauksapi.la
+ 
+-pamplugdir		=	/usr/lib64/security
++pamplugdir		=	$(libdir)/security
+ 
+ pamplug_LTLIBRARIES	=	pam_auks.la
+ 
+--- auks-0.4.4.orig/src/plugins/pam/Makefile.in
++++ auks-0.4.4/src/plugins/pam/Makefile.in
+@@ -338,7 +338,7 @@ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+ @HAVE_PAM_TRUE@man8_MANS = pam_auks.so.8
+ @HAVE_PAM_TRUE@LIBAUKSAPI = ../../api/auks/libauksapi.la
+-@HAVE_PAM_TRUE@pamplugdir = /usr/lib64/security
++@HAVE_PAM_TRUE@pamplugdir = $(libdir)/security
+ @HAVE_PAM_TRUE@pamplug_LTLIBRARIES = pam_auks.la
+ @HAVE_PAM_TRUE@pam_auks_la_SOURCES = pam_auks.c
+ @HAVE_PAM_TRUE@pam_auks_la_CPPFLAGS = -I$(top_srcdir)/src/api $(PAM_CPPFLAGS) \
