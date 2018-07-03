@@ -1,3 +1,9 @@
+auks (0.4.4-1+pam1) UNRELEASED; urgency=medium
+
+  * Added pam module from Dave Johnson (https://github.com/ddj-brown/auks)
+
+ -- John Bazik <jbazik@cs.brown.edu>  Tue, 03 Jul 2018 10:30:55 -0400
+
 auks (0.4.4-1) unstable; urgency=medium
 
   * Initial release of debian package.
